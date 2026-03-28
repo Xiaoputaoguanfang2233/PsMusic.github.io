@@ -1,0 +1,10 @@
+{
+    "name": "metowolf/meting-api",
+    "description": "📦 A powerful music API based on Meting",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "metowolf/meting": "^1.5"
+    },
+    "license": "MIT"
+}

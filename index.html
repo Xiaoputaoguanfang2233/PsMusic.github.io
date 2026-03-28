@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NEURAL CORE V9 | ETERNAL SNOW EDITION</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css">
+
+    <style>
+        /* * ============================================================
+         * [ CSS SECTION ] - 极繁主义雪地样式表
+         * ============================================================
+         */
+        :root {
+            --snow-white: #fbfcfd;
+            --pro-white: #ffffff;
+            --accent-cyan: #00d2ff;
+            --accent-blue: #3a7bd5;
+            --text-main: #2c3e50;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --border-light: rgba(226, 232, 240, 0.8);
+            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.05);
+            --radius-main: 24px;
+            --radius-card: 18px;
+            --anim-speed: 0.4s;
+        }
+
+        /* 基础重置 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--snow-white); 
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* [老婆层] 动漫少女固定布局 */
+        #waifu-chara {
+            position: fixed;
+            right: -20px;
+            bottom: -20px;
+            width: 450px;
+            height: 650px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom right;
+            z-index: -1; /* 放在内容层下方 */
+            pointer-events: none; /* 不干扰点击 */
+            opacity: 0;
+            transition: opacity 2s ease, transform 1s ease;
+            filter: drop-shadow(-10px 0 20px rgba(255,255,255,0.8));
+            /* 底部边缘融合 */
+            -webkit-mask-image: linear-gradient(to top, transparent 0%, black 20%);
+            mask-image: linear-gradient(to top, transparent 0%, black 20%);
+        }
+        .waifu-ready { opacity: 0.95 !important; transform: translateY(0) !important; }
+
+        /* [视觉引擎] 雪花背景 */
+        #neural-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 50% 50%, #fff 0%, #f1f5f9 100%);
+        }
+
+        /* 主容器：模仿抽号器 Pro 的居中感 */
+        .app-scaffold {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 140px; /* 留出播放器位置 */
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            min-height: 100vh;
+        }
+
+        /* 通用玻璃态卡片 */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-main);
+            box-shadow: var(--shadow-soft);
+            padding: 24px;
+            transition: transform var(--anim-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 头部控制中心 */
+        .header-hub { text-align: left; }
+        .brand-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .logo-box h1 { 
+            font-size: 28px; font-weight: 900; letter-spacing: 4px; margin: 0;
+            background: linear-gradient(90deg, #1e293b, var(--accent-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .v-tag { font-size: 10px; color: var(--accent-cyan); font-weight: bold; letter-spacing: 1px; }
+        .sys-info { text-align: right; font-family: monospace; font-size: 11px; color: var(--text-dim); }
+
+        /* 搜索终端交互 */
+        .search-module { display: flex; flex-direction: column; gap: 12px; }
+        .input-group { 
+            display: flex; background: rgba(0,0,0,0.04); padding: 6px; border-radius: 18px;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+        .input-group input { 
+            flex: 1; border: none; background: transparent; padding: 12px 18px; font-size: 16px; 
+            color: var(--text-main);
+        }
+        .engine-pills { display: flex; gap: 6px; align-items: center; padding-right: 10px; }
+        .pill { 
+            font-size: 11px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+            background: rgba(0,0,0,0.05); color: var(--text-dim); transition: 0.3s;
+        }
+        .pill.active { background: var(--accent-cyan); color: #fff; box-shadow: 0 4px 10px rgba(0, 210, 255, 0.3); }
+
+        .scan-button {
+            width: 100%; padding: 16px; border: none; border-radius: 18px;
+            background: #1e293b; color: #fff; font-weight: bold; cursor: pointer;
+            transition: 0.3s; letter-spacing: 2px;
+        }
+        .scan-button:hover { background: var(--accent-cyan); transform: translateY(-2px); }
+
+        /* [找回的推荐模块] */
+        .recommend-module { padding: 15px 0; }
+        .module-label { font-size: 13px; font-weight: bold; color: var(--text-dim); margin-bottom: 15px; padding-left: 5px; }
+        .rec-scroll-box { 
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; 
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .rec-scroll-box::-webkit-scrollbar { display: none; }
+        .rec-item {
+            min-width: 130px; height: 75px; border-radius: var(--radius-card);
+            position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .rec-item .bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.15; }
+        .rec-item span { position: relative; z-index: 1; font-size: 12px; font-weight: bold; }
+        .rec-item:hover { transform: scale(1.05); }
+
+        /* [核心列表修复] - 彻底解决 26806.jpg 的崩溃排版 */
+        .list-container { flex: 1; min-height: 400px; }
+        .tab-nav { display: flex; gap: 24px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .tab-link { 
+            padding: 10px 0; font-size: 14px; cursor: pointer; color: var(--text-dim); position: relative; 
+            transition: 0.3s;
+        }
+        .tab-link.active { color: var(--text-main); font-weight: bold; }
+        .tab-link.active::after { 
+            content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; 
+            background: var(--accent-cyan); border-radius: 3px;
+        }
+
+        .data-stream { display: flex; flex-direction: column; gap: 12px; }
+
+        /* 极度加固的曲目卡片 */
+        .track-card {
+            background: var(--pro-white);
+            border-radius: var(--radius-card);
+            padding: 12px;
+            height: 90px; /* 强制锁定高度 */
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: 0.3s;
+            border: 1px solid transparent;
+            animation: cardSlideIn 0.5s ease-out backwards;
+            overflow: hidden; /* 杜绝溢出 */
+        }
+        .track-card:hover { 
+            transform: translateX(8px); 
+            border-color: var(--accent-cyan); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03); 
+        }
+
+        @keyframes cardSlideIn { 
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 左侧：固定大小的封面和按钮 */
+        .card-aside { 
+            width: 65px; flex-shrink: 0; 
+            display: flex; flex-direction: column; align-items: center; gap: 6px; 
+        }
+        .cover-wrap { 
+            width: 60px; height: 60px; border-radius: 12px; overflow: hidden; 
+            position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .cover-wrap img { width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }
+        .cover-wrap:hover img { filter: brightness(0.7); transform: scale(1.1); }
+        .play-ico { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #fff; font-size: 18px; opacity: 0; transition: 0.3s;
+        }
+        .cover-wrap:hover .play-ico { opacity: 1; }
+
+        .action-row { display: flex; gap: 12px; justify-content: center; }
+        .mini-btn { font-size: 14px; color: var(--text-dim); cursor: pointer; transition: 0.2s; }
+        .mini-btn:hover { color: var(--accent-cyan); transform: scale(1.2); }
+        .mini-btn.active { color: #ff4757; }
+
+        /* 右侧：文字防爆区域 */
+        .card-body { flex: 1; min-width: 0; cursor: pointer; } /* min-width: 0 是省略号的灵魂 */
+        .t-name { 
+            font-size: 16px; font-weight: bold; color: var(--text-main); margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 溢出显示点点点 */
+        }
+        .t-meta { 
+            font-size: 12px; color: var(--text-dim); 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .t-meta span { 
+            background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 9px;
+            color: var(--accent-cyan); margin-right: 6px; font-weight: bold;
+        }
+
+        /* [播放器悬浮底座] */
+        .player-dock {
+            position: fixed; z-index: 1000;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+
+        /* 手机端播放器：全宽吸底 */
+        @media (max-width: 768px) {
+            .player-dock { bottom: 0; left: 0; width: 100%; padding: 5px; }
+            #waifu-chara { width: 280px; height: 400px; opacity: 0.6; right: -40px; }
+            .logo-box h1 { font-size: 22px; }
+        }
+
+        /* 电脑端播放器：精致右下角悬浮窗 */
+        @media (min-width: 769px) {
+            .player-dock { 
+                bottom: 30px; right: 30px; width: 420px; 
+                border-radius: 28px; border: 1px solid #fff;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 10px;
+            }
+        }
+
+        /* 提示框 */
+        #notify-hub { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+        .toast { 
+            background: #1e293b; color: #fff; padding: 10px 24px; border-radius: 50px;
+            font-size: 13px; margin-bottom: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: toastIn 0.3s ease-out;
+        }
+        @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .loader-ui { text-align: center; padding: 60px 0; color: var(--accent-cyan); font-weight: bold; letter-spacing: 2px; }
+        .empty-ui { text-align: center; padding: 80px 0; color: var(--text-dim); font-size: 14px; opacity: 0.6; }
+
+        /* APlayer 样式微调：使其更符合雪白风 */
+        .aplayer { background: transparent !important; box-shadow: none !important; margin: 0 !important; }
+        .aplayer .aplayer-pic { border-radius: 14px !important; }
+        .aplayer .aplayer-info { padding: 8px 12px !important; }
+        .aplayer .aplayer-title { color: var(--text-main) !important; font-weight: bold !important; }
+    </style>
+</head>
+<body>
+
+    <div id="neural-bg"></div>
+    <div id="waifu-chara"></div>
+    <div id="notify-hub"></div>
+
+    <div class="app-scaffold">
+        <header class="glass-panel header-hub">
+            <div class="brand-meta">
+                <div class="logo-box">
+                    <h1>NEURAL CORE</h1>
+                    <span class="v-tag">VERSION 9.0 SNOW</span>
+                </div>
+                <div class="sys-info">
+                    <div id="live-clock">00:00:00</div>
+                    <div id="status-tag">STABLE</div>
+                </div>
+            </div>
+
+            <div class="search-module">
+                <div class="input-group">
+                    <input type="text" id="neural-input" placeholder="键入特征码或艺术家名...">
+                    <div class="engine-pills" id="engine-picker">
+                        <span class="pill active" data-e="netease">网易</span>
+                        <span class="pill" data-e="tencent">企鹅</span>
+                        <span class="pill" data-e="kugou">酷狗</span>
+                    </div>
+                </div>
+                <button class="scan-button" id="trigger-scan">执行频谱扫描 (EXECUTE SCAN)</button>
+            </div>
+        </header>
+
+        <section class="recommend-module">
+            <div class="module-label">◇ 推荐灵感源 / NEURAL SEEDS</div>
+            <div class="rec-scroll-box" id="rec-box">
+                </div>
+        </section>
+
+        <main class="glass-panel list-container">
+            <nav class="tab-nav">
+                <div class="tab-link active" data-tab="cloud">云端序列</div>
+                <div class="tab-link" data-tab="local">核心存档</div>
+            </nav>
+
+            <div id="main-view-port" class="data-stream">
+                <div class="empty-ui">等待链路接入...</div>
+            </div>
+        </main>
+    </div>
+
+    <div class="player-dock" id="player-dock">
+        <div id="aplayer-container"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>
+    <script>
+        /**
+         * Neural Core Engine V9
+         * 全集成式逻辑代码
+         */
+        const App = {
+            config: {
+                waifuBase: 'https://api.leafone.cn/api/paimon', // 一个备选 API
+                dbKey: 'neural_v9_storage'
+            },
+            state: {
+                engine: 'netease',
+                tab: 'cloud',
+                localDB: JSON.parse(localStorage.getItem('neural_v9_storage') || '[]'),
+                ap: null,
+                lastResults: []
+            },
+
+            // 1. 初始化引擎
+            init() {
+                this.initPlayer();
+                this.bindUI();
+                this.loadWaifu();
+                this.renderRecs();
+                this.startClock();
+                this.notify("神经中枢 V9.0 联机成功");
+            },
+
+            // 2. 加载动漫少女 (老婆回归逻辑)
+            loadWaifu() {
+                const waifu = document.getElementById('waifu-chara');
+                // 使用高质量 API，带随机参数防止缓存
+                const seed = Math.floor(Math.random() * 1000);
+                const api = `https://api.yimian.xyz/img/moe?type=moe&size=1000&v=${seed}`;
+                
+                const img = new Image();
+                img.src = api;
+                img.onload = () => {
+                    waifu.style.backgroundImage = `url(${api})`;
+                    waifu.classList.add('waifu-ready');
+                };
+            },
+
+            initPlayer() {
+                this.state.ap = new APlayer({
+                    container: document.getElementById('aplayer-container'),
+                    theme: '#00d2ff',
+                    audio: []
+                });
+            },
+
+            bindUI() {
+                const input = document.getElementById('neural-input');
+                const btn = document.getElementById('trigger-scan');
+
+                // 搜索触发
+                btn.onclick = () => this.search();
+                input.onkeydown = (e) => e.key === 'Enter' && this.search();
+
+                // 引擎选择
+                document.getElementById('engine-picker').onclick = (e) => {
+                    if(e.target.classList.contains('pill')) {
+                        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.state.engine = e.target.dataset.e;
+                        this.notify(`切换引擎: ${this.state.engine.toUpperCase()}`);
+                    }
+                };
+
+                // 标签切换
+                document.querySelectorAll('.tab-link').forEach(link => {
+                    link.onclick = () => {
+                        document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        this.state.tab = link.dataset.tab;
+                        this.renderList(this.state.tab === 'local' ? this.state.localDB : this.state.lastResults);
+                    };
+                });
+            },
+
+            async search(query) {
+                const val = query || document.getElementById('neural-input').value.trim();
+                if(!val) return this.notify("请输入特征码", "error");
+
+                this.showLoading(true);
+                try {
+                    const res = await fetch(`https://api.i-meto.com/meting/api?server=${this.state.engine}&type=search&id=${encodeURIComponent(val)}`);
+                    const data = await res.json();
+                    this.state.lastResults = data;
+                    this.state.tab = 'cloud';
+                    this.renderList(data);
+                } catch(e) {
+                    this.notify("扫描失败: 通讯链路中断", "error");
+                    this.showLoading(false);
+                }
+            },
+
+            // 3. 核心修复：渲染防爆列表
+            renderList(items) {
+                const container = document.getElementById('main-view-port');
+                container.innerHTML = '';
+
+                if(!items || items.length === 0) {
+                    container.innerHTML = `<div class="empty-ui">暂无可用序列数据</div>`;
+                    return;
+                }
+
+                items.forEach((track, i) => {
+                    const isFav = this.state.localDB.some(s => s.title === track.title);
+                    const card = document.createElement('div');
+                    card.className = 'track-card';
+                    card.style.animationDelay = `${i * 0.05}s`;
+
+                    // 极致排版结构
+                    card.innerHTML = `
+                        <div class="card-aside">
+                            <div class="cover-wrap" onclick='App.playTrack(${JSON.stringify(track).replace(/'/g, "&apos;")})'>
+                                <img src="${track.pic}" alt="cover" loading="lazy">
+                                <div class="play-ico">▶</div>
+                            </div>
+                            <div class="action-row">
+                                <span class="mini-btn ${isFav ? 'active' : ''}" onclick='App.toggleFav(event, ${JSON.stringify(track).replace(/'/g, "&apos;")}, this)'>❤</span>
+                                <span class="mini-btn" onclick="window.open('${track.url}')">⭳</span>
+                            </div>
+                        </div>
+                        <div class="card-body" onclick='App.playTrack(${JSON.stringify(track).replace(/'/g, "&apos;")})'>
+                            <div class="t-name">${track.title}</div>
+                            <div class="t-meta">
+                                <span>${this.state.engine.toUpperCase()}</span> ${track.author}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            },
+
+            playTrack(track) {
+                if(!track.url || track.url === 'null') return this.notify("解析错误：资源受限", "error");
+                this.state.ap.list.clear();
+                this.state.ap.list.add({
+                    name: track.title, artist: track.author,
+                    url: track.url, cover: track.pic
+                });
+                this.state.ap.play();
+                this.notify(`解码成功: ${track.title}`);
+            },
+
+            toggleFav(e, track, btn) {
+                e.stopPropagation();
+                const idx = this.state.localDB.findIndex(s => s.title === track.title);
+                if(idx > -1) {
+                    this.state.localDB.splice(idx, 1);
+                    btn.classList.remove('active');
+                } else {
+                    this.state.localDB.push(track);
+                    btn.classList.add('active');
+                }
+                localStorage.setItem(this.config.dbKey, JSON.stringify(this.state.localDB));
+            },
+
+            renderRecs() {
+                const recs = [
+                    {n: 'ACG神曲', c: '#a1c4fd'},
+                    {n: 'B站热歌', c: '#ff9a9e'},
+                    {n: '赛博朋克', c: '#84fab0'},
+                    {n: '沉浸专注', c: '#cfd9df'},
+                    {n: '抖音排行', c: '#fda085'}
+                ];
+                document.getElementById('rec-box').innerHTML = recs.map(r => `
+                    <div class="rec-item" onclick="App.search('${r.n}')">
+                        <div class="bg" style="background:${r.c}"></div>
+                        <span>${r.n}</span>
+                    </div>
+                `).join('');
+            },
+
+            notify(msg, type='info') {
+                const hub = document.getElementById('notify-hub');
+                const t = document.createElement('div');
+                t.className = `toast ${type}`;
+                t.innerText = `⚡ ${msg}`;
+                hub.appendChild(t);
+                setTimeout(() => {
+                    t.style.opacity = '0';
+                    t.style.transform = 'translateY(-20px)';
+                    setTimeout(() => t.remove(), 500);
+                }, 3000);
+            },
+
+            startClock() {
+                setInterval(() => {
+                    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+                }, 1000);
+            },
+
+            showLoading(show) {
+                const port = document.getElementById('main-view-port');
+                if(show) port.innerHTML = `<div class="loader-ui">序列同步中...</div>`;
+            }
+        };
+
+        // 启动系统
+        window.onload = () => App.init();
+    </script>
+</body>
+</html>
